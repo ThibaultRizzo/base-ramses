@@ -4,13 +4,13 @@ version = "0.1.0"
 description = ""
 authors = ["Thibault RIZZO <thib.rizzo@gmail.com>"]
 readme = "README.md"
-packages = [{include = "base_ramses"}]
 
 [tool.poetry.dependencies]
 python = "^3.10"
 sqlalchemy = "^1.4.45"
 alembic = "^1.9.1"
 psycopg2 = "^2.9.5"
+stumpy = "^1.11.1"
 
 
 [build-system]

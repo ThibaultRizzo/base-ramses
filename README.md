@@ -14,3 +14,4 @@
 1. Demarrer l'environnement: poetry shell
 2. Installer toutes les dependances: poetry install
 3. Ajouter une dependence: poetry add ma_lib
+4. 
