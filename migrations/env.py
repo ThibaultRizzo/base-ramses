@@ -32,7 +32,7 @@ print(f"target_metadata  {target_metadata}")
 #     db = os.getenv("DB_NAME", "ramses")
 #     return f"postgresql://{user}:{password}@{server}/{db}"
 
-url = f"postgresql://test:test@localhost:5434/ramses"
+url = f"postgresql://test:test@localhost:5434/ramses    "
 
 def run_migrations_offline():
     """Run migrations in 'offline' mode.
