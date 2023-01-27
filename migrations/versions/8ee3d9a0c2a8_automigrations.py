@@ -1,8 +1,8 @@
-"""initial migration
+"""automigrations
 
-Revision ID: 738e326d96ab
+Revision ID: 8ee3d9a0c2a8
 Revises: 
-Create Date: 2023-01-10 09:34:35.484580
+Create Date: 2023-01-27 09:04:04.686470
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
-revision = '738e326d96ab'
+revision = '8ee3d9a0c2a8'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -42,9 +42,10 @@ def upgrade():
     sa.Column('description', sa.String(), nullable=False),
     sa.Column('yfinance_code', sa.String(), nullable=False),
     sa.Column('sector', sa.String(), nullable=False),
-    sa.Column('country_code', sa.String(), nullable=False),
+    sa.Column('country_code', sa.Enum('SWEDEN', 'US', 'EMU', name='countrycode', native_enum=False), nullable=False),
     sa.Column('type', sa.Enum('EQUITY', 'INDICE', 'FOREX', 'COMMO', 'IRATE', name='instrumenttype', native_enum=False), nullable=False),
     sa.Column('earning_publication_date', sa.TIMESTAMP(), nullable=False),
+    sa.Column('data_extraction_class', sa.Enum('YFINANCE', name='dataextractionclass', native_enum=False), nullable=False),
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('yfinance_code')
     )
@@ -73,7 +74,8 @@ def upgrade():
     )
     op.create_table('hourly_price_timeseries',
     sa.Column('id', postgresql.UUID(as_uuid=True), nullable=False),
-    sa.Column('date', sa.TIMESTAMP(), nullable=False),
+    sa.Column('date', sa.TIMESTAMP(timezone=True), nullable=False),
+    sa.Column('date_2', sa.TIMESTAMP(timezone=True), nullable=False),
     sa.Column('open', sa.Float(), nullable=False),
     sa.Column('high', sa.Float(), nullable=False),
     sa.Column('low', sa.Float(), nullable=False),
@@ -81,9 +83,10 @@ def upgrade():
     sa.Column('volume', sa.Float(), nullable=False),
     sa.Column('frequency', sa.Enum('HOURLY', 'DAILY', name='pricefrequency', native_enum=False), nullable=False),
     sa.Column('instrument_id', postgresql.UUID(as_uuid=True), nullable=False),
-    sa.ForeignKeyConstraint(['instrument_id'], ['instrument.id'], ondelete='CASCADE'),
+    sa.ForeignKeyConstraint(['instrument_id'], ['instrument.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
+    op.create_index('unique_ticker_date', 'hourly_price_timeseries', ['date', 'instrument_id'], unique=True)
     op.create_table('portfolio',
     sa.Column('id', postgresql.UUID(as_uuid=True), nullable=False),
     sa.Column('name', sa.String(), nullable=False),
@@ -112,8 +115,8 @@ def upgrade():
     sa.Column('model_cls', sa.Enum('BAND_MODEL', name='modelclass', native_enum=False), nullable=False),
     sa.Column('frequency', sa.Enum('HOURLY', 'DAILY', 'WEEKLY', name='modelfrequency', native_enum=False), nullable=False),
     sa.Column('is_in_production', sa.Boolean(), nullable=False),
-    sa.Column('portfolio_line_id', postgresql.UUID(as_uuid=True), nullable=False),
-    sa.ForeignKeyConstraint(['portfolio_line_id'], ['portfolio_line.id'], ),
+    sa.Column('portfolio_id', postgresql.UUID(as_uuid=True), nullable=False),
+    sa.ForeignKeyConstraint(['portfolio_id'], ['portfolio.id'], ),
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('is_in_production'),
     sa.UniqueConstraint('name')
@@ -155,6 +158,7 @@ def downgrade():
     op.drop_table('trading_model')
     op.drop_table('portfolio_line')
     op.drop_table('portfolio')
+    op.drop_index('unique_ticker_date', table_name='hourly_price_timeseries')
     op.drop_table('hourly_price_timeseries')
     op.drop_table('daily_features_timeseries')
     op.drop_index(op.f('ix_user_username'), table_name='user')

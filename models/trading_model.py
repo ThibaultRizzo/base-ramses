@@ -33,9 +33,9 @@ class TradingModelOrder(BaseModel):
     portfolio_line_id = Column(UUID(as_uuid=True), ForeignKey("portfolio_line.id"), nullable=False)
     model_id = Column(UUID(as_uuid=True), ForeignKey("trading_model.id", ondelete="CASCADE"), nullable=False)
 
-    instrument = relationship("Instrument", passive_deletes=True)
-    portfolio = relationship("Portfolio", passive_deletes=True)
-    model = relationship("Instrument", passive_deletes=True)
+    instrument = relationship("Instrument")
+    portfolio_line = relationship("PortfolioLine")
+    model = relationship("TradingModel")
   
 
 class TradingModelParameter(BaseModel):
@@ -49,7 +49,7 @@ class TradingModelParameter(BaseModel):
     model_id = Column(UUID(as_uuid=True), ForeignKey("trading_model.id", ondelete="CASCADE"), nullable=False)
 
     instrument = relationship("Instrument", passive_deletes=True)
-    model = relationship("Instrument", passive_deletes=True)
+    model = relationship("TradingModel", passive_deletes=True)
 
 
 class TradingModel(BaseModel):
@@ -62,7 +62,7 @@ class TradingModel(BaseModel):
     frequency = Column(Enum(ModelFrequency, native_enum=False), nullable=False)
     is_in_production = Column(Boolean, unique=True, nullable=False)
 
-    portfolio_line_id = Column(UUID(as_uuid=True), ForeignKey("portfolio_line.id"), nullable=False)
+    portfolio_id = Column(UUID(as_uuid=True), ForeignKey("portfolio.id"), nullable=False)
     portfolio = relationship("Portfolio", passive_deletes=True)
 
 

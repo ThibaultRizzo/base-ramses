@@ -1,18 +1,14 @@
 from models.base_model import BaseModel
-from sqlalchemy import Column, ForeignKey, TIMESTAMP, Float, Date, Enum
+from sqlalchemy import Column, ForeignKey, TIMESTAMP, Float, Date, Enum, Index
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import UUID
-from utils.enums import BaseEnum
-
-class PriceFrequency(BaseEnum):
-    HOURLY = "HOURLY"
-    DAILY = "DAILY"
+from models.model_enums import PriceFrequency
 
 class HourlyPriceTimeseries(BaseModel):
     """
     Hourly timeseries
     """
-    date = Column(TIMESTAMP(), nullable=False)
+    date = Column(TIMESTAMP(timezone=True), nullable=False)
     open= Column(Float(), nullable=False)
     high= Column(Float(), nullable=False)
     low= Column(Float(), nullable=False)
@@ -20,8 +16,17 @@ class HourlyPriceTimeseries(BaseModel):
     volume= Column(Float(), nullable=False)
     frequency = Column(Enum(PriceFrequency, native_enum=False), nullable=False)
 
-    instrument_id = Column(UUID(as_uuid=True), ForeignKey("instrument.id", ondelete="CASCADE"), nullable=False)
-    instrument = relationship("Instrument", backref="timeseries", passive_deletes=True)
+    instrument_id = Column(UUID(as_uuid=True), ForeignKey("instrument.id"), nullable=False)
+    instrument = relationship("Instrument", viewonly=True)
+
+    __table_args__ = (
+        Index(
+            "unique_ticker_date",
+            date,
+            instrument_id,
+            unique=True,
+        ),
+    )
 
 class DailyFeaturesTimeseries(BaseModel):
     """
@@ -31,5 +36,5 @@ class DailyFeaturesTimeseries(BaseModel):
     sector_pe= Column(Float(), nullable=False)
     pe= Column(Float(), nullable=False)
     instrument_id = Column(UUID(as_uuid=True), ForeignKey("instrument.id", ondelete="CASCADE"), nullable=False)
-    instrument = relationship("Instrument", backref="timeseries", passive_deletes=True)
+    instrument = relationship("Instrument", viewonly=True)
 

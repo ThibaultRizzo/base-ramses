@@ -23,4 +23,4 @@ class Portfolio(BaseModel):
     user_id = Column(UUID(as_uuid=True), ForeignKey("user.id"), nullable=False)
     net_asset_value= Column(Float(), nullable=False, default=0)
 
-    user = relationship("User")
+    user = relationship("User", viewonly=True)

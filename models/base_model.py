@@ -15,3 +15,9 @@ class BaseModel:
     def __tablename__(cls) -> str:
         return camel_to_snake_case(cls.__name__)
 
+    def dict(self):
+        d = {}
+        for column in self.__table__.columns:
+            d[column.name] = str(getattr(self, column.name))
+
+        return d

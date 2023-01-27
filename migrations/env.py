@@ -7,7 +7,7 @@ from sqlalchemy import pool
 from models.base_model import BaseModel
 from alembic import context
 # from app import models
-
+import os
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -19,7 +19,6 @@ if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
 target_metadata = BaseModel.metadata
-print(f"target_metadata  {target_metadata}")
 # other values from the config, defined by the needs of env.py,
 # can be acquired:
 # my_important_option = config.get_main_option("my_important_option")
@@ -32,7 +31,7 @@ print(f"target_metadata  {target_metadata}")
 #     db = os.getenv("DB_NAME", "ramses")
 #     return f"postgresql://{user}:{password}@{server}/{db}"
 
-url = f"postgresql://test:test@localhost:5434/ramses"
+url = os.getenv("SQLALCHEMY_DATABASE_URL", "postgresql://test:test@localhost:5434/ramses")
 
 def run_migrations_offline():
     """Run migrations in 'offline' mode.
