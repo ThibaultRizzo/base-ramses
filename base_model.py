@@ -1,5 +1,8 @@
 from dataclasses import dataclass
 
+from pandas import DataFrame
+
+
 @dataclass
 class BaseModel:
     def load_data(self)-> DataFrame:

@@ -15,6 +15,7 @@ yfinance = "^0.2.3"
 pydantic = "^1.10.4"
 python-dotenv = "^0.21.1"
 sqlalchemy-utils = "^0.39.0"
+pandas = "^1.5.2"
 
 
 [tool.poetry.group.dev.dependencies]

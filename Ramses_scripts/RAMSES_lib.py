@@ -31,9 +31,172 @@ def get_stock_data(ticker, start_date, end_date, buffer_days= 365):
     df= yf.download(ticker, start= start_date_buffer, end= end_date)
     return df
 ############################################################################################################ 
+####   FONCTIONS UTILITAIRES
+############################################################################################################      
+def target_point(P0, HLC, profit_move, stop_move, eps):
+# calcule le target d'un point P0 à l'origine d'une série HLC, avec un objectif de profit_move et
+# un stop-loss de stop_move
+    S= HLC.copy()
+    S.columns= ['High', 'Low', 'Close']
+    ret_high= S.High/ P0 - 1
+    ret_high= ret_high.reset_index(drop= True)
+    ret_low=S.Low/ P0 - 1
+    ret_low= ret_low.reset_index(drop= True)
+    
+    if (ret_high> profit_move).sum()>0:
+        N_up_profit= ret_high.loc[ret_high> profit_move].index[0]
+    else:
+        N_up_profit= 999
+        
+    if (ret_high> stop_move).sum()>0:
+        N_up_sloss= ret_high.loc[ret_high> stop_move].index[0]
+    else:
+        N_up_sloss= 999   
+        
+    if (ret_low<- profit_move).sum()>0:
+        N_down_profit= ret_low.loc[ret_low<- profit_move].index[0]
+    else:
+        N_down_profit= 999
+    
+    if (ret_low<- stop_move).sum()>0:
+        N_down_sloss= ret_low.loc[ret_low<- stop_move].index[0]
+    else:
+        N_down_sloss= 999 
+     
+    if N_up_profit< N_down_profit:
+        target= 1/ (1+  eps)**N_up_profit- (N_down_sloss< N_up_profit)/ (1+  eps)**N_down_sloss
+    elif N_down_profit< N_up_profit:
+        target= -1/ (1+  eps)**N_down_profit+ (N_up_sloss< N_down_profit)/ (1+  eps)**N_up_sloss
+    else:
+        target= 0
+        
+    return target
+###############################################################
+def target_series(HLC, n_days_limit, profit_move, stop_move, eps= 0.05):
+# calcule le target de tous les points d'une série, avec un objectif de profit_move et
+# un stop-loss de stop_move, avec une limite de n_days_limit forward
+# par défaut, le premier et dernier points ont un target de 0
+    S= HLC.copy()
+    S.columns= ['High', 'Low', 'Close']
+    
+    target= S.iloc[:,0]* 0
+    
+    for i in range(0,S.shape[0]- 1 - n_days_limit):
+        target[i]= target_point(S['Close'][i], S.iloc[i+1:i+1+ n_days_limit], profit_move, stop_move, eps)
+    for i in range(S.shape[0]- 1 - n_days_limit, S.shape[0]- 1):
+        target[i]= target_point(S['Close'][i], S.iloc[i+1:], profit_move, stop_move, eps)
+        
+    return target
+        
+############################################################################################################ 
+####   FEATURES
+############################################################################################################      
+def feature_LargeMoves(HLC, C0, n_days, move):
+# calcule le ratio de large directional moves up versus down
+# C0 représente le point de référence pour la première barre (ex open ou C(-1))
+# move peut être exprimé en % ou en nombre d'ATR passé
+# le ratio est entre 0 et 1
+    S= HLC.copy()
+    S.columns= ['High', 'Low', 'Close']
+    ATR_array= np.array([])
+    i=0
+    ATR_array[i]= max(S.High[i]-C0, C0- Low[i], High[i]- Low[i])
+    directional_moves[i]= (ATR_array[i]> move)* \
+        (max(High[i]- Close[i], Close[i]- Low[i])< (High[i]- Low[i])/8)
+    
+    return S
+######################################################
+def Point_Ref_Simple(S,l):
+    # calcule les deux séries de points de référence max et min d'une série
+    # pour une moyenne mobile simple de longueur l
+    df=pd.DataFrame(S)
+    temp=pd.DataFrame(index= df.index, data= np.zeros((len(df),4)))
+    temp.iloc[:l,0]=df.iloc[:l,0]
+    temp.iloc[:l,1]=df.iloc[:l,0]
+    temp.iloc[:l,2]=df.iloc[:l,0]
+    temp.iloc[:l,3]=df.iloc[:l,0]
+
+    sma=df.rolling(window=l,center=False).mean()
+    sg=(df-sma).apply(np.sign)
+
+    i=l
+    sg[:i]=sg.iloc[i][0]
+    temp.iloc[:i,1]= np.min(df.iloc[:i,0])
+    temp.iloc[:i,2]= np.max(df.iloc[:i,0])
+
+    if sg.iloc[i,0]==1:
+        temp.iloc[:i,0]= np.min(df.iloc[:i,0])
+    else:
+        temp.iloc[:i,0]= np.max(df.iloc[:i,0])
+
+    for i in range(l,len(S)):
+
+        if sg.iloc[i,0]>sg.iloc[i-1,0]:
+            temp.iloc[i,0]=df.iloc[i,0]
+            temp.iloc[i,1]=temp.iloc[i-1,0]
+            temp.iloc[i,2]=temp.iloc[i-1,2]
+            temp.iloc[i,3]=temp.iloc[i,1]
+            
+        elif sg.iloc[i,0]<sg.iloc[i-1,0]:
+            temp.iloc[i,0]=df.iloc[i,0]
+            temp.iloc[i,1]=temp.iloc[i-1,1]
+            temp.iloc[i,2]=temp.iloc[i-1,0]
+            temp.iloc[i,3]=temp.iloc[i,2]
+
+        elif sg.iloc[i,0]==1:
+            temp.iloc[i,0]=np.max([temp.iloc[i-1,0],df.iloc[i,0]])
+            temp.iloc[i,1]=temp.iloc[i-1,1]
+            temp.iloc[i,2]=temp.iloc[i-1,2]
+            temp.iloc[i,3]=temp.iloc[i,1]
+          
+        else:
+            temp.iloc[i,0]=np.min([temp.iloc[i-1,0],df.iloc[i,0]])
+            temp.iloc[i,1]=temp.iloc[i-1,1]
+            temp.iloc[i,2]=temp.iloc[i-1,2]
+            temp.iloc[i,3]=temp.iloc[i,2]
+           
+    return temp.iloc[:,1:3]
+######################################################
+######################################################
+def max_DDown_abs(S):
+# calcule le max drawdown absolu d'une série S sur une longueur l
+    S=pd.DataFrame(S)
+    DD=(S.cummax()-S)
+    return DD.max()[0]
+######################################################
+def max_DUp_abs(S):
+# calcule le max drawup absolu d'une série S sur une longueur l
+    S=pd.DataFrame(S)
+    DU=(S-S.cummin())
+    return DU.max()[0]
+######################################################
+##################################################################
+def rolling_gen(df, w):
+    for i in range(df.shape[0] - w + 1):
+        yield pd.DataFrame(df.values[i:i+w, :], df.index[i:i+w], df.columns)
+####################################################################
+def _corde_path(S):
+# calcule le ratio entre la corde et le chemin total d'un df de prix
+    A=np.array(S.copy())
+    
+    corde= A[-1]/A[0]-1    
+    path= np.sum(np.array([np.abs(A[i]/A[i-1]-1) for i in range(1,len(A))]), axis=0)    
+    path[path==0]= np.nan
+    
+    temp=pd.Series(corde/path,name=S.index[-1])   
+    return temp
+##########################################################
+def F_ts_corde_path(S,l1):
+# donne le ratio corde/path sur l1 jours d'une série de prix
+    temp0= S* np.nan    
+    z=rolling_gen(S,l1)    
+    temp=pd.concat([_corde_path(item) for item in z],axis=1)    
+    temp0.loc[temp.T.index]= temp.T  
+    return temp0.fillna(0)
+############################################################################################################ 
 ####   STRATEGY
 ############################################################################################################     
-def strategy_Bout(df, **kwargs):
+def strategy_Breakout(df, **kwargs):
     
     n_up= kwargs.get('n_up', 15)
     n_down= kwargs.get('n_down', 11)
@@ -168,6 +331,81 @@ def strategy_MACD(df, **kwargs):
     data.SHORT= data.SHORT.shift(n_shift)
     data.EXIT_SHORT= data.EXIT_SHORT.shift(n_shift)
    
+    return data
+###############################################################
+def strategy_Ichimoku(df, **kwargs):
+    n_conv= kwargs.get('n_conv', 9)
+    n_base= kwargs.get('n_base', 26)
+    n_span_b= kwargs.get('n_span_b', 26)
+    
+    data= df.copy()
+    
+    ichimoku= ta.trend.IchimokuIndicator(data.High, data.Low, n_conv, n_base, n_span_b)
+    
+    data['BASE']= ichimoku.ichimoku_base_line().round(4)
+    data['CONV']= ichimoku.ichimoku_conversion_line().round(4)
+    
+    data['DIFF']= data['CONV']- data['BASE']
+    data['DIFF_PREV']= data['DIFF'].shift(1)
+    
+    data['LONG']= (data.DIFF> 0) & (data.DIFF_PREV<= 0)
+    data['EXIT_LONG']= (data.DIFF< 0) & (data.DIFF_PREV>= 0)
+    
+    data['SHORT']= (data.DIFF< 0) & (data.DIFF_PREV>= 0)
+    data['EXIT_SHORT']= (data.DIFF> 0) & (data.DIFF_PREV<= 0)
+    
+    data.LONG= data.LONG.shift(1)
+    data.EXIT_LONG= data.EXIT_LONG.shift(1)
+    data.SHORT= data.SHORT.shift(1)
+    data.EXIT_SHORT= data.EXIT_SHORT.shift(1)
+   
+    return data
+################################################################
+def strategy_WR(df, **kwargs):
+    n= kwargs.get('n', 14)
+    
+    data= df.copy()
+    
+    wr= ta.momentum.WilliamsRIndicator(data.High, data.Low, data.Close, n)
+    
+    data['WR']= wr.WR().round(4)
+    data['WR_PREV']= data.WR.shift(1)
+    
+    data['LONG']= (data.WR> -80) & (data.WR_PREV<= -80)
+    data['EXIT_LONG']= (data.WR< -20) & (data.WR_PREV>= -20)
+    
+    data['SHORT']= (data.WR< -20) & (data.WR_PREV>= -20)
+    data['EXIT_SHORT']= (data.WR> -80) & (data.WR_PREV<= -80)
+    
+    data.LONG= data.LONG.shift(1)
+    data.EXIT_LONG= data.EXIT_LONG.shift(1)
+    data.SHORT= data.SHORT.shift(1)
+    data.EXIT_SHORT= data.EXIT_SHORT.shift(1)
+   
+    return data
+###############################################################
+def strategy_KeltnerChannel_origin(df, **kwargs):
+    n= kwargs.get('n', 10)
+    data= df.copy()
+    
+    k_band= ta.volatility.KeltnerChannel(data.High, data.Low, data.Close, n)
+    
+    data['K_BAND_UB']= k_band.keltner_channel_hband().round(4)
+    data['K_BAND_LB']= k_band.keltner_channel_lband().round(4)
+    
+    data['CLOSE_PREV']= data.Close.shift(1)
+    
+    data['LONG']= (data.Close<= data.K_BAND_LB) & (data.CLOSE_PREV> data.K_BAND_LB)
+    data['EXIT_LONG']= (data.Close>= data.K_BAND_UB) & (data.CLOSE_PREV< data.K_BAND_UB)
+    
+    data['SHORT']= (data.Close>= data.K_BAND_UB) & (data.CLOSE_PREV< data.K_BAND_UB)
+    data['EXIT_SHORT']= (data.Close<= data.K_BAND_LB) & (data.CLOSE_PREV> data.K_BAND_LB)
+    
+    data.LONG= data.LONG.shift(1)
+    data.EXIT_LONG= data.EXIT_LONG.shift(1)
+    data.SHORT= data.SHORT.shift(1)
+    data.EXIT_SHORT= data.EXIT_SHORT.shift(1)
+    
     return data
 ############################################################################################################ 
 ####   SIGNALS  &  RUN STRATEGY  FUNCTIONS

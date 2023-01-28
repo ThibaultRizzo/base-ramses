@@ -80,6 +80,8 @@ for strategy in strategies:
     # Summary DataFrames
     VL= pd.DataFrame([])
     trade_stat_global= pd.DataFrame([])
+    # Columns title
+    strategy_name= str(strat).split(' ')[1]  +str(param)
     
     for ticker in tickers:
         df= RMSlib.get_stock_data(ticker, start_date, end_date)
@@ -91,6 +93,7 @@ for strategy in strategies:
         v= RMSlib.run_strategy(ticker, u, i0= i0, stop_loss= stop_loss, stop_profit= stop_profit)
         VL_ticker= v[0]['VL_cum']
         trade_stat= v[1]
+        trade_stat['strategy']= strategy_name
         
         VL=pd.concat([VL, VL_ticker], axis= 1)
         VL= VL.fillna(method= 'ffill')
@@ -101,62 +104,62 @@ for strategy in strategies:
 ####  BACKTEST 
 ############################################################################################################   
 
-VL_global= VL.mean(axis= 1)
-VLs= pd.concat([VL, VL_global], axis= 1)
-tickers_col= tickers.copy()
-tickers_col.append('VL_global')
-VLs.columns= tickers_col
-
-VLs.plot()
-plt.show()
-
-backtest_duration= VL_global.shape[0]/ 252
-trade_statistics_global= trade_stat_global.groupby(['pos', 'Win_Loss']).agg(['count',\
-                                                                            'mean','max', 'min'])
-trade_statistics_global= trade_statistics_global.reset_index()
-trade_statistics_global.columns= ['pos', 'Win_Loss','N_trades', 'Avg_ndays', 'Max_ndays', 'Min_ndays', 'nCount',\
-'Avg_ret', 'Max_Ret', 'Min_ret']
-trade_statistics_global.drop('nCount', inplace= True, axis= 1)
-
-tot_number_trades= trade_statistics_global.N_trades.sum()
-win_ratio= trade_statistics_global[trade_statistics_global.Win_Loss== 'Win'].N_trades.sum()/ \
-                    tot_number_trades
-                    
-temp_stat= trade_statistics_global[['Win_Loss', 'N_trades', 'Avg_ndays', 'Avg_ret']]
-
-avg_ret= temp_stat.N_trades* temp_stat.Avg_ret
-avg_ret= avg_ret.sum()/ tot_number_trades
-avg_ndays= temp_stat.N_trades* temp_stat.Avg_ndays
-avg_ndays= avg_ndays.sum()/ tot_number_trades
-
-temp_stat_win= temp_stat[temp_stat.Win_Loss== 'Win']
-
-avg_win_ret= temp_stat_win.N_trades* temp_stat.Avg_ret
-avg_win_ret= avg_win_ret.sum()/ temp_stat_win.N_trades.sum()
-avg_win_ndays= temp_stat_win.N_trades* temp_stat.Avg_ndays
-avg_win_ndays= avg_win_ndays.sum()/ temp_stat_win.N_trades.sum()
-
-temp_stat_loss= temp_stat[temp_stat.Win_Loss== 'Loss']
-
-avg_loss_ret= temp_stat_loss.N_trades* temp_stat.Avg_ret
-avg_loss_ret= avg_loss_ret.sum()/ temp_stat_loss.N_trades.sum()
-avg_loss_ndays= temp_stat_loss.N_trades* temp_stat.Avg_ndays
-avg_loss_ndays= avg_loss_ndays.sum()/ temp_stat_loss.N_trades.sum()
-
-VL_global_DD= VL_global- VL_global.cummax()
-VL_maxDD= np.min(VL_global_DD)
-
-print( f"########## Statistics ############ \n"
-      f"Tickers:  {tickers} \n"
-      f"Average return: {avg_ret: .2%} \nWin ratio : {win_ratio: .1%} \n"
-      f"Win_return = {avg_win_ret: .2%} \n"
-      f"Loss_return  = {avg_loss_ret: .2%} \n"
-      f"Max_DrawDown : {VL_maxDD: .2%}")
-
-############################################################################################################ 
-####  ORDERS
-############################################################################################################   
-
- 
-
-  
+    VL_global= VL.mean(axis= 1)
+    VLs= pd.concat([VL, VL_global], axis= 1)
+    tickers_col= tickers.copy()
+    tickers_col.append('VL_global')
+    VLs.columns= tickers_col
+    
+    VLs.plot()
+    plt.show()
+    
+    backtest_duration= VL_global.shape[0]/ 252
+    trade_statistics_global= trade_stat_global.groupby(['pos', 'Win_Loss']).agg(['count',\
+                                                                                'mean','max', 'min'])
+    trade_statistics_global= trade_statistics_global.reset_index()
+    trade_statistics_global.columns= ['pos', 'Win_Loss','N_trades', 'Avg_ndays', 'Max_ndays', 'Min_ndays', 'nCount',\
+    'Avg_ret', 'Max_Ret', 'Min_ret']
+    trade_statistics_global.drop('nCount', inplace= True, axis= 1)
+    
+    tot_number_trades= trade_statistics_global.N_trades.sum()
+    win_ratio= trade_statistics_global[trade_statistics_global.Win_Loss== 'Win'].N_trades.sum()/ \
+                        tot_number_trades
+                        
+    temp_stat= trade_statistics_global[['Win_Loss', 'N_trades', 'Avg_ndays', 'Avg_ret']]
+    
+    avg_ret= temp_stat.N_trades* temp_stat.Avg_ret
+    avg_ret= avg_ret.sum()/ tot_number_trades
+    avg_ndays= temp_stat.N_trades* temp_stat.Avg_ndays
+    avg_ndays= avg_ndays.sum()/ tot_number_trades
+    
+    temp_stat_win= temp_stat[temp_stat.Win_Loss== 'Win']
+    
+    avg_win_ret= temp_stat_win.N_trades* temp_stat.Avg_ret
+    avg_win_ret= avg_win_ret.sum()/ temp_stat_win.N_trades.sum()
+    avg_win_ndays= temp_stat_win.N_trades* temp_stat.Avg_ndays
+    avg_win_ndays= avg_win_ndays.sum()/ temp_stat_win.N_trades.sum()
+    
+    temp_stat_loss= temp_stat[temp_stat.Win_Loss== 'Loss']
+    
+    avg_loss_ret= temp_stat_loss.N_trades* temp_stat.Avg_ret
+    avg_loss_ret= avg_loss_ret.sum()/ temp_stat_loss.N_trades.sum()
+    avg_loss_ndays= temp_stat_loss.N_trades* temp_stat.Avg_ndays
+    avg_loss_ndays= avg_loss_ndays.sum()/ temp_stat_loss.N_trades.sum()
+    
+    VL_global_DD= VL_global- VL_global.cummax()
+    VL_maxDD= np.min(VL_global_DD)
+    
+    print( f"########## Statistics ############ \n"
+          f"Tickers:  {tickers} \n"
+          f"Average return: {avg_ret: .2%} \nWin ratio : {win_ratio: .1%} \n"
+          f"Win_return = {avg_win_ret: .2%} \n"
+          f"Loss_return  = {avg_loss_ret: .2%} \n"
+          f"Max_DrawDown : {VL_maxDD: .2%}")
+    
+    ############################################################################################################ 
+    ####  ORDERS
+    ############################################################################################################   
+    
+     
+    
+      
