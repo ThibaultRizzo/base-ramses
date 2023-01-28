@@ -15,6 +15,7 @@ services:
             - "5434:5432"
         volumes:
             - "db_data:/var/lib/postgresql/data:rw"
+            - "./dump.sql:/dump.sql"
   
 
     # ramses-api:

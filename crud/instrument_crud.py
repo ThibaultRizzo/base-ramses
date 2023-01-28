@@ -5,7 +5,7 @@ from datetime import datetime, time, timedelta
 from models.model_enums import PriceFrequency
 from models.instrument import MARKET_TIMEFRAMES
 
-class InstrumentCrud(BaseCrud):
+class InstrumentCrud(BaseCrud[Instrument]):
     base_cls = Instrument
 
     @classmethod

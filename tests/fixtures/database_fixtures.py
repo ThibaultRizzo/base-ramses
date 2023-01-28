@@ -7,6 +7,9 @@ import importlib
 from tests.datasets.generic import DATA_SET
 from settings import settings
 from sqlalchemy_utils import create_database, drop_database
+from sqlalchemy.orm import sessionmaker
+from settings import settings
+from models.base_model import BaseModel
 
 def unzip_data_set(data_set):
     """
@@ -87,3 +90,33 @@ def fixture_db(request):
             #     text = f"DROP DATABASE {db_name}"
             #     conn.execute(sa_text(text))
 
+
+class TestBlog:
+    def setup_class(self):
+        engine = create_engine(
+            settings.SQLALCHEMY_DATABASE_URL, echo=True, future=True
+        )
+        SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+        BaseModel.metadata.create_all(engine)
+        self.session = Session()
+        self.valid_author = Author(
+            firstname="Ezzeddin",
+            lastname="Aybak",
+            email="aybak_email@gmail.com"
+        )
+
+    def teardown_class(self):
+        self.session.rollback()
+        self.session.close()
+
+@pytest.fixture(scope="module")
+def db_session():
+    engine = create_engine(
+        settings.SQLALCHEMY_DATABASE_URL, echo=True, future=True
+    )
+    # session = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+    BaseModel.metadata.create_all(engine)
+    session = Session()
+    yield session
+    session.rollback()
+    session.close()
