@@ -4,10 +4,15 @@ from sqlalchemy import Column, String, Enum, TIMESTAMP, Date, Float, ForeignKey,
 from utils.enums import BaseEnum
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import UUID
+from utils.string import camel_to_snake_case
 
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from trading_models.base import BaseTradingModel
 
 class ModelClass(BaseEnum):
     BAND_MODEL = "BAND_MODEL"
+    RAMSES_MODEL = "RamsesModel"
 
 class ModelFrequency(BaseEnum):
     HOURLY = "HOURLY"
@@ -52,6 +57,20 @@ class TradingModelParameter(BaseModel):
     model = relationship("TradingModel", passive_deletes=True)
 
 
+class TradingModelInstrument(BaseModel):
+    """
+    Model representing a trading model instrument
+    """
+    start_date = Column(Date(), nullable=False)
+    end_date = Column(Date(), nullable=False)
+    parameter= Column(Float(), nullable=False)
+    instrument_id = Column(UUID(as_uuid=True), ForeignKey("instrument.id"), nullable=False)
+    model_id = Column(UUID(as_uuid=True), ForeignKey("trading_model.id", ondelete="CASCADE"), nullable=False)
+
+    instrument = relationship("Instrument", passive_deletes=True)
+    model = relationship("TradingModel", passive_deletes=True)
+
+
 class TradingModel(BaseModel):
     """
     Model representing a trading model
@@ -60,12 +79,22 @@ class TradingModel(BaseModel):
     description = Column(String, nullable=True)
     model_cls = Column(Enum(ModelClass, native_enum=False), nullable=False)
     frequency = Column(Enum(ModelFrequency, native_enum=False), nullable=False)
-    is_in_production = Column(Boolean, unique=True, nullable=False)
+    is_in_production = Column(Boolean, nullable=False, default=False)
+    is_active = Column(Boolean, nullable=False, default=False)
 
-    portfolio_id = Column(UUID(as_uuid=True), ForeignKey("portfolio.id"), nullable=False)
+    portfolio_id = Column(UUID(as_uuid=True), ForeignKey("portfolio.id"), nullable=True)
+
     portfolio = relationship("Portfolio", passive_deletes=True)
 
+    def get_model_cls(self):
+        try:
+            return getattr(__import__(
+                f'trading_models.{camel_to_snake_case(self.model_cls)}',
+                fromlist=[self.model_cls]), self.model_cls
+            )
+        except Exception as exc:
+            print(type(exc))
 
     def execute(self) -> List[TradingModelOrder]:
-        pass
-        # model_cls.execute()
+        model_cls = self.get_model_cls()
+        return model_cls.execute(self)

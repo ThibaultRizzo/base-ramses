@@ -13,7 +13,7 @@ import models
 from datetime import datetime
 
 session = next(get_db())
-# instrument_id = "11111111-1111-1111-9111-111111111111"
+instrument_id = "11111111-1111-1111-9111-111111111111"
 # instrument = InstrumentCrud.get_by_id(session, instrument_id)
 instrument = InstrumentCrud.create_one(session, {
     "code":"AAPL",
@@ -29,3 +29,16 @@ session.commit()
 timeries = InstrumentCrud.get_timeseries(session, 'AAPL', datetime(2023, 1, 10), datetime(2023, 1, 15))
 print(f"timeseries {timeries}")
 session.commit()
+
+
+instrument = InstrumentCrud.get_by_id(session, "11111111-1111-1111-9111-111111111111")
+instrument = InstrumentCrud.get_one(session, (
+    models.Instrument.code == 'MSFT',
+    models.Instrument.country_code == 'FR'
+))
+
+instruments = InstrumentCrud.get_all(session, (
+    models.Instrument.country_code == 'FR'
+))
+
+

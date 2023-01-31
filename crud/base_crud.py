@@ -10,15 +10,16 @@ class BaseCrud(Generic[T]):
     @classmethod
     def get_by_id(cls, session, entity_id: str) -> T:
         stmt = select(cls.base_cls).where(cls.base_cls.id==entity_id)
-        return session.scalars(stmt).one_or_none()
+        return session.execute(stmt).scalars().one_or_none()
 
     @classmethod
     def get_one(cls, session, criterion: tuple) -> T:
-        stmt = select(cls.base_cls).where(*criterion)
-        return session.scalars(stmt).one_or_none()
+        stmt = select(cls.base_cls).where(criterion)
+        return session.execute(stmt).scalar_one_or_none()
 
     @classmethod
-    def get_all(cls, session, criterion: tuple) -> List[T]:
+    def get_all(cls, session, criterion: tuple = None) -> List[T]:
+        criterion = criterion or ()
         stmt = select(cls.base_cls).where(*criterion)
         return session.scalars(stmt).all()
 

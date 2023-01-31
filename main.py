@@ -41,7 +41,9 @@ def main():
 
     # 2. Pull tickers
     pull_tickers_from_models(models)
+    ## Fix missing data
 
+    
     # 3. Execute models
     orders = []
     for model in models:

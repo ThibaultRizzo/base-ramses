@@ -12,7 +12,7 @@ from settings import settings
 def get_db():
     # TODO: Improve this to share connection 
     engine = create_engine(
-        settings.SQLALCHEMY_DATABASE_URL, echo=True, future=True
+        settings.SQLALCHEMY_DATABASE_URL, echo=False, future=True
     )
     SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
     BaseModel.metadata.create_all(bind=engine)

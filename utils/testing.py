@@ -6,6 +6,8 @@ import inspect
 import json
 from typing import Any, Callable, List, MutableMapping, Union
 from uuid import UUID
+from pandas import DataFrame
+import numpy as np
 
 def is_sub_class(instance: object, class_name: str, module_name: str = None):
     """
@@ -28,9 +30,9 @@ class BaseJSONEncoder(json.JSONEncoder):
         """Default"""
         if o is None:
             return None
-        if isinstance(o, (str, int, bytes)):
-            return o
-        if isinstance(o, (dict, list)):
+        if isinstance(o, (str, int, bytes, np.int64)):
+            return int(o)
+        if isinstance(o, (dict, list, DataFrame)):
             return o
 
         if o == Any:
@@ -55,6 +57,7 @@ class BaseJSONEncoder(json.JSONEncoder):
 
 def serialize(obj):
     """Serializing method"""
+
     if obj == Any:
         return Any
     return BaseJSONEncoder().default(obj)
