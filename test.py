@@ -15,17 +15,17 @@ from datetime import datetime
 session = next(get_db())
 # instrument_id = "11111111-1111-1111-9111-111111111111"
 # instrument = InstrumentCrud.get_by_id(session, instrument_id)
-instrument = InstrumentCrud.create_one(session, {
-    "code":"AAPL",
-    "description" : "Apple ticker",
-    "yfinance_code" :"AAPL",
-    "sector" :"tech",
-    "country_code" :models.instrument.CountryCode.US,
-    "type" :models.InstrumentType.EQUITY,
-    "earning_publication_date" :datetime.now(),
-    "data_extraction_class" :models.DataExtractionClass.YFINANCE
-})
-session.commit()
+# instrument = InstrumentCrud.create_one(session, {
+#     "code":"AAPL",
+#     "description" : "Apple ticker",
+#     "yfinance_code" :"AAPL",
+#     "sector" :"tech",
+#     "country_code" :models.instrument.CountryCode.US,
+#     "type" :models.InstrumentType.EQUITY,
+#     "earning_publication_date" :datetime.now(),
+#     "data_extraction_class" :models.DataExtractionClass.YFINANCE
+# })
+# session.commit()
 timeries = InstrumentCrud.get_timeseries(session, 'AAPL', datetime(2023, 1, 10), datetime(2023, 1, 15))
 print(f"timeseries {timeries}")
 session.commit()

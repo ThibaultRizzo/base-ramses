@@ -175,7 +175,7 @@ def rolling_gen(df, w):
     for i in range(df.shape[0] - w + 1):
         yield pd.DataFrame(df.values[i:i+w, :], df.index[i:i+w], df.columns)
 ####################################################################
-def _corde_path(S):
+def corde_path(S):
 # calcule le ratio entre la corde et le chemin total d'un df de prix
     A=np.array(S.copy())
     
@@ -190,7 +190,7 @@ def F_ts_corde_path(S,l1):
 # donne le ratio corde/path sur l1 jours d'une série de prix
     temp0= S* np.nan    
     z=rolling_gen(S,l1)    
-    temp=pd.concat([_corde_path(item) for item in z],axis=1)    
+    temp=pd.concat([corde_path(item) for item in z],axis=1)
     temp0.loc[temp.T.index]= temp.T  
     return temp0.fillna(0)
 ############################################################################################################ 
