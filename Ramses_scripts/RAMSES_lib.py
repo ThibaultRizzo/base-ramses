@@ -105,59 +105,7 @@ def feature_LargeMoves(HLC, C0, n_days, move):
         (max(High[i]- Close[i], Close[i]- Low[i])< (High[i]- Low[i])/8)
     
     return S
-######################################################
-def Point_Ref_Simple(S,l):
-    # calcule les deux séries de points de référence max et min d'une série
-    # pour une moyenne mobile simple de longueur l
-    df=pd.DataFrame(S)
-    temp=pd.DataFrame(index= df.index, data= np.zeros((len(df),4)))
-    temp.iloc[:l,0]=df.iloc[:l,0]
-    temp.iloc[:l,1]=df.iloc[:l,0]
-    temp.iloc[:l,2]=df.iloc[:l,0]
-    temp.iloc[:l,3]=df.iloc[:l,0]
 
-    sma=df.rolling(window=l,center=False).mean()
-    sg=(df-sma).apply(np.sign)
-
-    i=l
-    sg[:i]=sg.iloc[i][0]
-    temp.iloc[:i,1]= np.min(df.iloc[:i,0])
-    temp.iloc[:i,2]= np.max(df.iloc[:i,0])
-
-    if sg.iloc[i,0]==1:
-        temp.iloc[:i,0]= np.min(df.iloc[:i,0])
-    else:
-        temp.iloc[:i,0]= np.max(df.iloc[:i,0])
-
-    for i in range(l,len(S)):
-
-        if sg.iloc[i,0]>sg.iloc[i-1,0]:
-            temp.iloc[i,0]=df.iloc[i,0]
-            temp.iloc[i,1]=temp.iloc[i-1,0]
-            temp.iloc[i,2]=temp.iloc[i-1,2]
-            temp.iloc[i,3]=temp.iloc[i,1]
-            
-        elif sg.iloc[i,0]<sg.iloc[i-1,0]:
-            temp.iloc[i,0]=df.iloc[i,0]
-            temp.iloc[i,1]=temp.iloc[i-1,1]
-            temp.iloc[i,2]=temp.iloc[i-1,0]
-            temp.iloc[i,3]=temp.iloc[i,2]
-
-        elif sg.iloc[i,0]==1:
-            temp.iloc[i,0]=np.max([temp.iloc[i-1,0],df.iloc[i,0]])
-            temp.iloc[i,1]=temp.iloc[i-1,1]
-            temp.iloc[i,2]=temp.iloc[i-1,2]
-            temp.iloc[i,3]=temp.iloc[i,1]
-          
-        else:
-            temp.iloc[i,0]=np.min([temp.iloc[i-1,0],df.iloc[i,0]])
-            temp.iloc[i,1]=temp.iloc[i-1,1]
-            temp.iloc[i,2]=temp.iloc[i-1,2]
-            temp.iloc[i,3]=temp.iloc[i,2]
-           
-    return temp.iloc[:,1:3]
-######################################################
-######################################################
 def max_DDown_abs(S):
 # calcule le max drawdown absolu d'une série S sur une longueur l
     S=pd.DataFrame(S)

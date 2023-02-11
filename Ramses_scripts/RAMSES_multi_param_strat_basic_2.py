@@ -73,7 +73,7 @@ for strategy in strategies:
         
     ## on génère la liste des dictionnaires qui servent dans le paramétrage
     param_dict_list= [dict(zip(param_name, param)) for param in list(product(*param_list))]
-    param= param_dict_list[0]
+    param= param_dict_list[3]
     i0= 0
     stop_loss= 0.03
     stop_profit= 0.06
@@ -107,7 +107,7 @@ for strategy in strategies:
     VL_global= VL.mean(axis= 1)
     VLs= pd.concat([VL, VL_global], axis= 1)
     tickers_col= tickers.copy()
-    tickers_col.append('VL_global')
+    tickers_col.append(strategy_name)
     VLs.columns= tickers_col
     
     VLs.plot()
