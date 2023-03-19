@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from pandas import DataFrame
 from crud.trading_model_crud import TradingModelCrud
 from models import TradingModel, HourlyPriceTimeseries
-from typing import Dict, List
+from typing import Dict, List, Callable
 
 @dataclass
 class BaseTradingModel:
@@ -18,19 +18,69 @@ class BaseTradingModel:
     def execute(cls, trading_model: TradingModel):
         pass
 
+StrategyCallable = Callable[[DataFrame], DataFrame]
+
 @dataclass
 class SimpleTradingModel(BaseTradingModel):
+
+    @classmethod
+    def execute(cls, trading_model: TradingModel):
+        # Fetch timeseries for every ticker linked to the model, on the PERIOD and FREQUENCY on which i want to execute this model
+        ticker_df = cls.load_data(trading_model)
+
+        # Get configured strategy list (list of curried functions with fixed parameters)
+        strategies = cls.get_strategies()
+
+        order_list = []
+        for ticker in ticker_df:
+            df = ticker_df[ticker]
+            # Compute list of features from ticker base raw data
+            features_df = cls.compute_features(df)
+
+            # Compute signal dataframe from raw data and features for each configured strategy
+            # dataframe of N tickers over X dates and Y strategies with values -1, 0 or 1
+            signals_df = cls.compute_signals(df, features_df, strategies)
+
+            # Compute orders to send from signals dataframe
+            # dataframe of N tickers over Y strategies with order list as value
+            ticker_order_list = cls.compute_orders(signals_df)
+            order_list = order_list.extend(ticker_order_list)
+
+            # Compute stats for the orders to send
+            cls.compute_stats(order_list)
+
+        return order_list
+
+            
+        # for strategy in strategies:
+        #     for ticker in ticker_df:
+        #         df = ticker_df[ticker]
+        #         features_df = cls.compute_features(df)
+        #         signals_df = cls.compute_signals(df, features_df)
+        #         orders_to_pass = cls.run_strategies(features_df, signals_df)
+        #         orders_from_meta_strategy =  cls.run_meta_strategy(orders_to_pass, features, feature_signals)
+        #         order_list = order_list.extend(orders_from_meta_strategy)
+        #         cls.compute_stats(trading_model, order_list)
+        # return order_list
+
+    @classmethod
+    def get_strategies(cls) -> Dict[str, StrategyCallable]:
+        pass
 
     @classmethod
     def compute_features(cls, data: DataFrame):
         pass
 
     @classmethod
-    def compute_signals(cls, data: DataFrame, features):
+    def compute_signals(cls, data: DataFrame, features: DataFrame, strategies: Dict[str, StrategyCallable]) -> DataFrame:
         pass
 
     @classmethod
-    def run_strategies(cls, features, signals):
+    def compute_orders(cls, signals_df: DataFrame)-> List[int]:
+        pass
+
+    @classmethod
+    def run_strategies(cls, features_df: DataFrame, signals_df: DataFrame) -> List[int]:
         pass
 
     @classmethod
@@ -40,20 +90,6 @@ class SimpleTradingModel(BaseTradingModel):
     @classmethod
     def compute_stats(cls, orders, features, signals):
         pass
-
-    @classmethod
-    def execute(cls, trading_model: TradingModel):
-        ticker_dict = cls.load_data(trading_model)
-        order_list = []
-        for ticker in ticker_dict:
-            data = ticker_dict[ticker]
-            features = cls.compute_features(data)
-            feature_signals = cls.compute_signals(data, features)
-            orders_to_pass = cls.run_strategies(features, feature_signals)
-            orders_from_meta_strategy =  cls.run_meta_strategy(orders_to_pass, features, feature_signals)
-            order_list = order_list.extend(orders_from_meta_strategy)
-            cls.compute_stats(trading_model, order_list)
-        return order_list
 
     @classmethod
     def apply_stop_loss_policy(cls):

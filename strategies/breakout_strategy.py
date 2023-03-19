@@ -1,4 +1,5 @@
 from pandas import DataFrame
+from typing import Callable
 
 def compute_breakout_signals(df: DataFrame, n_up=15, n_down=11, n_shift=0):
     data= df[['High', 'Low', 'Close']].copy()
@@ -22,3 +23,11 @@ def compute_breakout_signals(df: DataFrame, n_up=15, n_down=11, n_shift=0):
     data.SHORT= data.SHORT.shift(n_shift)
     data.EXIT_SHORT= data.EXIT_SHORT.shift(n_shift)
     return data
+
+def get_breakout_strategy(n_up=15, n_down=11, n_shift=0)-> Callable[[DataFrame], DataFrame]:
+    """
+    Currying strategy to split strategy parameter configuration and strategy execution
+    """
+    def _compute_breakout_signals(df: DataFrame):
+        return compute_breakout_signals(df, n_up, n_down, n_shift)
+    return _compute_breakout_signals

@@ -1,9 +1,11 @@
-from trading_models.base import SimpleTradingModel
+from trading_models.base import SimpleTradingModel, StrategyCallable
 from strategies.breakout_strategy import compute_breakout_signals
-from strategies.rsi_strategy import compute_rsi, compute_rsi_signals
+from strategies.rsi_strategy import compute_rsi_signals
 from pandas import DataFrame
 import numpy as np
 import enum
+from typing import List, Callable, Dict, Tuple
+from strategies import get_breakout_strategy, get_rsi_strategy
 
 class State(str, enum.Enum):
     EXIT_LONG_SUR_SIGNAL="EXIT_LONG_SUR_SIGNAL"
@@ -27,30 +29,113 @@ class State(str, enum.Enum):
 class RamsesModel(SimpleTradingModel):
 
     @classmethod
-    def compute_features(cls, df) -> DataFrame:
-        rsi_window = 14
-        return DataFrame({
-            'rsi': compute_rsi(df, rsi_window),
-        })
+    def get_strategies(cls):
+        return {
+            'breakout': get_breakout_strategy(
+                n_up= [15, 25, 35],
+                n_down= [11,21,31],
+                n_shift= [0,1]
+            ),
+            'rsi':get_rsi_strategy(
+                n= list(range(9,22,3)),
+                n_seuil= list(range(15,31,5)),
+                n_shift= [0,1]
+            )
+        }
+
+    # @classmethod
+    # def compute_features(cls, df: DataFrame) -> DataFrame:
+    #     rsi_window = 14
+    #     df = df.copy()
+    #     df['rsi'] = compute_rsi(df, rsi_window)
+    #     return df
 
     @classmethod
-    def compute_signals(cls, df, features: DataFrame):
-        return DataFrame({
-            'rsi':compute_rsi_signals(features['rsi']),
-            'breakout':compute_breakout_signals(df)
-        })
+    def compute_signals(cls, df: DataFrame, feature_df: DataFrame, strategies: Dict[str, StrategyCallable]) -> DataFrame:
+        dataframe = DataFrame()
+        for name, strategy in strategies:
+            dataframe[name] = strategy(df)
+        return dataframe
+        # return DataFrame({
+        #     'rsi':compute_rsi_signals(feature_df['rsi']),
+        #     'breakout':compute_breakout_signals(df)
+        # })
 
     @classmethod
-    def _get_exit_price(cls, model_positions, is_exit_long):
+    def run_strategies(cls, features_df: DataFrame, signals_df: DataFrame) -> List[int]:
+        strategies = [
+
+        ]
+
+        # for strategy in strategies:
+            
+
+    @classmethod
+    def _get_number_of_days_in_position(cls, model_positions: List[Tuple], is_exit_long: bool) -> int | None:
         reversed_model_positions = model_positions[::-1]
         expected_position = 1 if is_exit_long else -1 # Implicitly is exit_short then
-        for i in range(len(model_positions)):
-            if reversed_model_positions[i][0] != expected_position:
-                return len(model_positions) - i
-        return None
+        number_of_positions = len(model_positions)
+        return next((
+                number_of_positions - i
+                for i in range(number_of_positions)
+                if reversed_model_positions[i][0] != expected_position
+            ),
+            None
+        )
+        # for i in range(len(model_positions)):
+        #     if reversed_model_positions[i][0] != expected_position:
+        #         return len(model_positions) - i
+        # return None
 
     @classmethod
-    def _get_position_state(cls, df, stop_loss, stop_profit):        
+    def _get_model_position(cls, df: DataFrame, stop_loss: int, stop_profit: int):
+        """
+        Analyze dataframe and establish a position with related parameter parameters for each iteration
+        Returns:
+            A list of tuples
+                (
+                    position: -1, 0 or 1 for SHORT, NONE, LONG
+                    entry_price: price that triggered position change
+                    exit_price: price that triggered last position exit
+                    nb_days: number of days holding current position
+                )
+        """
+        model_positions = [(0, None, None, 0)] # First position can be ignored
+        for i in range(1, df.shape[0]):
+            last_position, last_entry_price, _, last_number_of_days = model_positions[i-1]
+            current_price = last_entry_price or 0
+            
+            if (df['LONG'][i] and last_position != 1): # If entering LONG
+                model_positions.append((1, df['Close'][i], None, 1))
+            elif (df['SHORT'][i] and last_position != -1): # If entering SHORT
+                model_positions.append((-1, df['Close'][i], None, 1))
+            elif (df['EXIT_LONG'][i] or df['EXIT_SHORT'][i]): # If exiting current position
+                # model_positions.reverse()
+                # model_positions.append((0, None, df['Close'][i], cls._get_number_of_days_in_position(model_positions, df['EXIT_LONG'][i])))
+                model_positions.append((0, None, df['Close'][i], 0))
+            elif last_position == 1 and (
+                df['Low'][i]<= current_price*(1 - stop_loss) or df['High'][i] > current_price*(1 + stop_profit)
+            ): # If LONG but exiting
+                model_positions.append((0, None, None, 0))
+            elif last_position == -1 and (
+                df['High'][i] > current_price*(1 + stop_loss) or df['Low'][i]<= current_price*(1- stop_profit)
+            ): # If SHORT but exiting
+                model_positions.append((0, None, None, 0))
+            else: # Else keep current position
+                model_positions.append((last_position, last_entry_price, None, last_number_of_days + 1))
+        return model_positions
+
+    @classmethod
+    def _get_position_state(cls, df: DataFrame, stop_loss: int, stop_profit: int) -> List[Dict]: 
+        """
+        Method computing all position changes within the dataframe.
+        Pre-requisites: dataframe must have have SHORT, EXIT_SHORT, LONG and EXIT_LONG attributes computed
+        Parameters
+        ----------
+        df: dataframe containing raw data from which to extract the signals
+        stop_loss: a number [0,1] defining the relative limit that should mark a change of position
+        stop_profit: a number [0,1] defining the relative limit that should mark a change of position
+        """       
         model_positions = [(0, None, None, None)]
         for i in range(1, df.shape[0]):
             last_position, last_entry_price, _, _ = model_positions[i-1]
@@ -100,6 +185,7 @@ class RamsesModel(SimpleTradingModel):
             elif position == -1:
                 state=  State.SHORT
             state_list.append({
+                'i': i,
                 'position': position,
                 'entry_price': entry_price if state in [State.LONG, State.SHORT, State.NONE] else model_positions[i-2][1],
                 'exit_price':  exit_price,
@@ -139,6 +225,7 @@ class RamsesModel(SimpleTradingModel):
             #     state = State.LONG
             # if is_short and df['SHORT']:
             #     state = State.SHORT
+
 
     @classmethod
     def run_strategy(signal_df, stop_loss= None, stop_profit= None, regime= None):
@@ -334,7 +421,7 @@ class RamsesModel(SimpleTradingModel):
         df['VL_ret']= VL_ret
         df['VL_cum']= df['VL_ret'].cumsum(axis= 0)
         
-        trade_stat= pd.DataFrame(trade_summary, columns=['pos', 'n_days', 'tot_ret'])
+        trade_stat= DataFrame(trade_summary, columns=['pos', 'n_days', 'tot_ret'])
         trade_stat['Win_Loss']= trade_stat['tot_ret'].apply(lambda x: 'Loss' if x<0 else 'Win')
         trade_stat['Win_Loss']= trade_stat['Win_Loss'].apply(str)
         # trade_stat['ticker']= ticker
@@ -342,10 +429,6 @@ class RamsesModel(SimpleTradingModel):
         
         return df, trade_stat, trade_statistics
 
-
-    @classmethod
-    def run_strategies(cls, features, signals):
-        pass
 
     @classmethod
     def run_meta_strategy(cls, orders, features, signals):
