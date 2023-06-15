@@ -1,12 +1,13 @@
 from sqlalchemy import Column
 from sqlalchemy.dialects.postgresql import UUID
 from uuid import uuid4
-from sqlalchemy.ext.declarative import as_declarative, declared_attr
+from sqlalchemy.ext.declarative import declared_attr
     
 from utils.string import camel_to_snake_case
 
-@as_declarative()
-class BaseModel:
+from sqlalchemy.orm import DeclarativeBase
+
+class BaseModel(DeclarativeBase):
     id = Column(UUID(as_uuid=True), primary_key=True, nullable=False, default=uuid4)
     __name__: str
 

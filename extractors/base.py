@@ -9,6 +9,7 @@ if TYPE_CHECKING:
 class BaseExtractor:
     ticker_column: str
 
+    @classmethod
     def pull(cls, instrument: Instrument, end_date: datetime, start_date: datetime = None):
         '''
         Download timeseries from a datasource

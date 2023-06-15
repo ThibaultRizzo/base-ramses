@@ -4,12 +4,7 @@ Main module
 from typing import List
 from models import TradingModel, TradingModelOrder
 from .broker import send_orders, ExecutedOrder
-
-def retrieve_trading_models()-> List[TradingModel]:
-    '''
-    Fetch all active trading models which need to be executed for the given activation time
-    '''
-    pass
+from crud.trading_model_crud import TradingModelCrud
 
 def pull_tickers_from_models(models: List[TradingModel]):
     '''
@@ -20,7 +15,7 @@ def pull_tickers_from_models(models: List[TradingModel]):
 
 def build_portfolio(orders: List[TradingModelOrder]):
     '''
-    Build portfolio while taking current portfolio and computed risk
+    Build portfolio while taking current portfolio and computed risk into account
     '''
     pass
 
@@ -28,7 +23,7 @@ def build_portfolio(orders: List[TradingModelOrder]):
 
 def compute_post_thread_stats(orders: List[ExecutedOrder]):
     '''
-    Send orders to broker
+    Compute post thread stats
     '''
     pass
 
@@ -37,7 +32,7 @@ def main():
     This script will be executed every business hour
     '''
     # 1. Retrieve models to be computed
-    models = retrieve_trading_models()
+    models = TradingModelCrud.get_active_trading_models()
 
     # 2. Pull tickers
     pull_tickers_from_models(models)

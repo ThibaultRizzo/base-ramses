@@ -1,3 +1,5 @@
+PROJECT_NAME='ramses'
+DB_CONTAINER_NAME="ramses-db"
 
 ######################
 ###### METHODS #######
@@ -22,6 +24,7 @@ start_with_dump() {
     docker exec $db_container_id psql -f dump.sql -U test -p 5432 $db_name
 }
 
+docker volume rm $(docker ps -aqf name="$ramses-db")
 dump() {
     log sync "Creating dump..."
     local container_name="ramses-db"
@@ -32,7 +35,50 @@ dump() {
     docker cp $db_container_id:/dump.sql dump.sql
 }
 
-
+# Generic database commands
+db() {
+    case $1 in
+        init)
+            docker compose up -d ramses-db
+            ;;
+        makemigrations)
+            db migrate
+            poetry run alembic revision --autogenerate -m "automigrations"
+            ;;
+        migrate)
+            poetry run alembic upgrade head
+            ;;
+        mergemigrations)
+            poetry run alembic merge heads -m "automerge"
+            ;;
+        downgrade)
+            poetry run alembic downgrade -1
+            ;;
+        shell)
+            local db_container_id=$(docker ps -aqf name="$DB_CONTAINER_NAME")
+            docker exec -it $db_container_id psql -Utest $PROJECT_NAME "$@"
+            ;;
+        drop)
+            docker compose rm -f ramses-db
+            docker volume rm base-ramses_db_data
+            db init
+            # db shell -c "set AUTOCOMMIT on\nDROP DATABASE IF EXISTS ${PROJECT_NAME}; CREATE DATABASE ${PROJECT_NAME}; GRANT ALL PRIVILEGES ON DATABASE ${PROJECT_NAME} to test;"
+            ;;
+        reset)
+            db drop
+            db migrate
+            db seed
+            ;;
+        seed)
+            echo "No seeding mechanism yet implemented..."
+        #     poetry run python -m md.api.scripts.populate_stories generic
+        #     poetry run python -m md.api.scripts.populate_permissions
+            ;;
+        *)
+            echo "Command '$1' not found for ramses.sh#db()"
+            ;;
+    esac
+}
 
 ################################
 ###### TECHNICAL METHODS #######

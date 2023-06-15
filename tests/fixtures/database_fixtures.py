@@ -120,3 +120,14 @@ def db_session():
     yield session
     session.rollback()
     session.close()
+
+engine_2 = create_engine(settings.SQLALCHEMY_DATABASE_URL)
+Session_2 = sessionmaker(bind=engine_2)
+
+@pytest.fixture(scope="module")
+def db_session_2():
+    BaseModel.metadata.create_all(engine_2)
+    session = Session_2()
+    yield session
+    session.rollback()
+    session.close()

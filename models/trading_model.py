@@ -78,7 +78,7 @@ class TradingModel(BaseModel):
     name = Column(String, unique=True, nullable=False)
     description = Column(String, nullable=True)
     model_cls = Column(Enum(ModelClass, native_enum=False), nullable=False)
-    frequency = Column(Enum(ModelFrequency, native_enum=False), nullable=False)
+    execution_frequency = Column(Enum(ModelFrequency, native_enum=False), nullable=False)
     is_in_production = Column(Boolean, nullable=False, default=False)
     is_active = Column(Boolean, nullable=False, default=False)
 
