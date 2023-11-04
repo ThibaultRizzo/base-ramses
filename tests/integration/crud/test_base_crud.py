@@ -1,10 +1,9 @@
-from settings import settings
-from models.base_model import BaseModel
+from sqlalchemy import Column, Float, String, create_engine
+from sqlalchemy.orm import Session, sessionmaker
+
 from crud.base_crud import BaseCrud
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy.orm import Session
-from sqlalchemy import Column, String, Float
+from models.base_model import BaseModel
+from settings import settings
 
 # class TestEntity(BaseModel):
 #     username = Column(String, nullable=False)
@@ -12,11 +11,10 @@ from sqlalchemy import Column, String, Float
 # class TestEntityCrud(BaseCrud):
 #     base_cls = TestEntity
 
+
 class TestBlog:
     def setup_class(self):
-        engine = create_engine(
-            settings.SQLALCHEMY_DATABASE_URL, echo=True, future=True
-        )
+        engine = create_engine(settings.SQLALCHEMY_DATABASE_URL, echo=True, future=True)
         BaseModel.metadata.create_all(engine)
         # TestEntity.metadata.create_all(engine)
         self.session = Session()

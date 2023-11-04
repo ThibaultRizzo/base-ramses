@@ -1,15 +1,18 @@
-from models.base_model import BaseModel
-from sqlalchemy import select
-from typing import TypeVar, Generic, List
+from typing import Generic, List, TypeVar
 
-T = TypeVar('T')
+from sqlalchemy import select
+
+from models.base_model import BaseModel
+
+T = TypeVar("T")
+
 
 class BaseCrud(Generic[T]):
     base_cls: BaseModel
 
     @classmethod
     def get_by_id(cls, session, entity_id: str) -> T:
-        stmt = select(cls.base_cls).where(cls.base_cls.id==entity_id)
+        stmt = select(cls.base_cls).where(cls.base_cls.id == entity_id)
         return session.execute(stmt).scalars().one_or_none()
 
     @classmethod

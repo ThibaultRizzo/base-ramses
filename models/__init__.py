@@ -1,6 +1,6 @@
 from .broker import Broker
-from .instrument import Instrument, InstrumentType, DataExtractionClass
+from .instrument import DataExtractionClass, Instrument, InstrumentType
 from .portfolio import Portfolio, PortfolioLine
-from .timeseries import HourlyPriceTimeseries, DailyFeaturesTimeseries
+from .timeseries import DailyFeaturesTimeseries, HourlyPriceTimeseries
 from .trading_model import TradingModel, TradingModelOrder, TradingModelParameter
 from .user import User

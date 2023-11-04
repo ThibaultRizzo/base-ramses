@@ -1,13 +1,16 @@
 from logging.config import fileConfig
+
+# from app import models
+import os
+
+from alembic import context
+from sqlalchemy import engine_from_config, pool
+
+from models.base_model import BaseModel
+
 # from core.config import settings
 # from core.utils.db.base_model import BaseModel
 
-from sqlalchemy import engine_from_config
-from sqlalchemy import pool
-from models.base_model import BaseModel
-from alembic import context
-# from app import models
-import os
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -31,7 +34,8 @@ target_metadata = BaseModel.metadata
 #     db = os.getenv("DB_NAME", "ramses")
 #     return f"postgresql://{user}:{password}@{server}/{db}"
 
-url = os.getenv("SQLALCHEMY_DATABASE_URL", "postgresql://test:test@localhost:5434/ramses")
+url = os.getenv("SQLALCHEMY_DATABASE_URL", "postgresql://ramses:ramses@localhost:5445/ramses")
+
 
 def run_migrations_offline():
     """Run migrations in 'offline' mode.
@@ -70,7 +74,9 @@ def run_migrations_online():
     # configuration["sqlalchemy.url"] = settings.get_database_uri()
     configuration["sqlalchemy.url"] = url
     connectable = engine_from_config(
-        configuration, prefix="sqlalchemy.", poolclass=pool.NullPool,
+        configuration,
+        prefix="sqlalchemy.",
+        poolclass=pool.NullPool,
     )
 
     with connectable.connect() as connection:

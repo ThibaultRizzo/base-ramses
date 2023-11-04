@@ -1,6 +1,8 @@
-from utils.testing import compare_item, compare_list
-from crud.instrument_crud import InstrumentCrud
 from datetime import datetime
+
+from crud.instrument_crud import InstrumentCrud
+from utils.testing import compare_item, compare_list
+
 
 def test_get_timeseries(db):
     instrument_code = "MSFT"
@@ -145,9 +147,9 @@ def test_get_timeseries(db):
                 "date": "2022-02-02 14:30:00+00:00",
                 "frequency": "HOURLY",
                 "instrument_id": "11111111-1111-1111-9111-111111111111",
-            }
+            },
         ],
-        InstrumentCrud.get_timeseries(session=db, code=instrument_code, start_date=datetime(2022, 2,2), end_date=datetime(2022, 2,5))
+        InstrumentCrud.get_timeseries(
+            session=db, code=instrument_code, start_date=datetime(2022, 2, 2), end_date=datetime(2022, 2, 5)
+        ),
     )
-
-

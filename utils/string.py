@@ -7,6 +7,7 @@ import re
 FIRST_CAP_REGEX = re.compile("(.)([A-Z][a-z]+)")
 ALL_CAP_REGEX = re.compile("([a-z0-9])([A-Z])")
 
+
 def camel_to_snake_case(string: str):
     """
     Parse string from camel casing to snake casing

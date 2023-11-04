@@ -5,10 +5,10 @@ from pandas import DataFrame
 
 @dataclass
 class BaseModel:
-    def load_data(self)-> DataFrame:
+    def load_data(self) -> DataFrame:
         pass
 
-    def clean_data(self, df: DataFrame)-> DataFrame:
+    def clean_data(self, df: DataFrame) -> DataFrame:
         pass
 
     def run_strategy(self, df):
@@ -20,4 +20,4 @@ class BaseModel:
         self.run_strategy(df)
 
 
-class BandModel(BaseModel):
+# class BandModel(BaseModel):

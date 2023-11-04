@@ -1,15 +1,16 @@
-import pytest
-import uuid
-from sqlalchemy import create_engine, text as sa_text
-from sqlalchemy.orm import Session
-from models.base_model import BaseModel
 import importlib
-from tests.datasets.generic import DATA_SET
-from settings import settings
+import uuid
+
+import pytest
+from sqlalchemy import create_engine
+from sqlalchemy import text as sa_text
+from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy_utils import create_database, drop_database
-from sqlalchemy.orm import sessionmaker
-from settings import settings
+
 from models.base_model import BaseModel
+from settings import settings
+from tests.datasets.generic import DATA_SET
+
 
 def unzip_data_set(data_set):
     """
@@ -29,6 +30,7 @@ def unzip_data_set(data_set):
     elif isinstance(data_set, dict):
         yield data_set
 
+
 @pytest.fixture(name="db")
 def fixture_db(request):
     """
@@ -40,14 +42,10 @@ def fixture_db(request):
     """
     db_name = "service_backend_test_" + str(uuid.uuid4()).replace("-", "_")
     # text = f"CREATE DATABASE {db_name} ENCODING 'utf8' TEMPLATE 'template1'"
-    db_url = f'postgresql://test:test@localhost:5434/{db_name}'
+    db_url = f"postgresql://test:test@localhost:5434/{db_name}"
     settings.SQLALCHEMY_DATABASE_URL = db_url
     create_database(db_url)
-    engine = create_engine(
-        url=db_url,
-        echo=False,
-        future=True
-    )
+    engine = create_engine(url=db_url, echo=False, future=True)
     try:
         # session.execute(sa_text(text))
         BaseModel.metadata.drop_all(engine)
@@ -74,46 +72,39 @@ def fixture_db(request):
             yield session
     finally:
         drop_database(db_url)
-            # with engine.connect() as conn:
-            #     version = conn.dialect.server_version_info
-            #     pid_column = "pid" if (version >= (9, 2)) else "procpid"
-            #     text = f"""
-            #     SELECT pg_terminate_backend(pg_stat_activity.{pid_column})
-            #     FROM pg_stat_activity
-            #     WHERE pg_stat_activity.datname = '{db_name}'
-            #     AND {pid_column} <> pg_backend_pid();
-            #     """
-            #     conn.execute(sa_text(text))
+        # with engine.connect() as conn:
+        #     version = conn.dialect.server_version_info
+        #     pid_column = "pid" if (version >= (9, 2)) else "procpid"
+        #     text = f"""
+        #     SELECT pg_terminate_backend(pg_stat_activity.{pid_column})
+        #     FROM pg_stat_activity
+        #     WHERE pg_stat_activity.datname = '{db_name}'
+        #     AND {pid_column} <> pg_backend_pid();
+        #     """
+        #     conn.execute(sa_text(text))
 
-            # # Drop the database.
-            # with engine.connect() as conn:
-            #     text = f"DROP DATABASE {db_name}"
-            #     conn.execute(sa_text(text))
+        # # Drop the database.
+        # with engine.connect() as conn:
+        #     text = f"DROP DATABASE {db_name}"
+        #     conn.execute(sa_text(text))
 
 
 class TestBlog:
     def setup_class(self):
-        engine = create_engine(
-            settings.SQLALCHEMY_DATABASE_URL, echo=True, future=True
-        )
+        engine = create_engine(settings.SQLALCHEMY_DATABASE_URL, echo=True, future=True)
         SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
         BaseModel.metadata.create_all(engine)
         self.session = Session()
-        self.valid_author = Author(
-            firstname="Ezzeddin",
-            lastname="Aybak",
-            email="aybak_email@gmail.com"
-        )
+        self.valid_author = Author(firstname="Ezzeddin", lastname="Aybak", email="aybak_email@gmail.com")
 
     def teardown_class(self):
         self.session.rollback()
         self.session.close()
 
+
 @pytest.fixture(scope="module")
 def db_session():
-    engine = create_engine(
-        settings.SQLALCHEMY_DATABASE_URL, echo=True, future=True
-    )
+    engine = create_engine(settings.SQLALCHEMY_DATABASE_URL, echo=True, future=True)
     # session = sessionmaker(autocommit=False, autoflush=False, bind=engine)
     BaseModel.metadata.create_all(engine)
     session = Session()

@@ -6,8 +6,10 @@ import inspect
 import json
 from typing import Any, Callable, List, MutableMapping, Union
 from uuid import UUID
-from pandas import DataFrame
+
 import numpy as np
+from pandas import DataFrame
+
 
 def is_sub_class(instance: object, class_name: str, module_name: str = None):
     """
@@ -76,9 +78,11 @@ def assert_scalars(expected_item, received_item, *, preserve_types=False):
         )
     )
 
+
 def get_type_or_none(obj):
     """Get type or none"""
     return type(obj) if obj is not None else ""
+
 
 def get_key_or_none(obj: dict, key: str):
     """
@@ -87,7 +91,6 @@ def get_key_or_none(obj: dict, key: str):
       dict does not have a value for this key
     """
     return obj.get(key, None) if isinstance(obj, dict) else None
-
 
 
 def compare_item(expected_item: dict, received_item: dict, preserve_types=False):
@@ -173,4 +176,3 @@ def compare_list(expected_list, received_list):
             for i, expected_item in enumerate(expected_list):
                 received_item = received_list[i]
                 compare_item(expected_item, received_item)
-

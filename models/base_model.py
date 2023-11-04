@@ -1,9 +1,11 @@
+from uuid import uuid4
+
 from sqlalchemy import Column
 from sqlalchemy.dialects.postgresql import UUID
-from uuid import uuid4
 from sqlalchemy.ext.declarative import as_declarative, declared_attr
-    
+
 from utils.string import camel_to_snake_case
+
 
 @as_declarative()
 class BaseModel:

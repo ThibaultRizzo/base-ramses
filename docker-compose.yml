@@ -2,20 +2,35 @@ version: "3.7"
 
 services:
     ramses-db:
-        image: postgres:14.2
-        container_name: ramses-db
+        image: postgres:16-alpine
+        container_name: test_db
         restart: always
-        env_file:
-            - .env
         environment:
-            - POSTGRES_PASSWORD=${DB_PASSWORD-test}
-            - POSTGRES_USER=${DB_USER-test}
+            - POSTGRES_PASSWORD=${DB_PASSWORD-ramses}
+            - POSTGRES_USER=${DB_USER-ramses}
             - POSTGRES_DB=${DB_NAME-ramses}
         ports:
-            - "5434:5432"
-        volumes:
-            - "db_data:/var/lib/postgresql/data:rw"
-            - "./dump.sql:/dump.sql"
+            - "5445:5432"
+        # volumes:
+        #     - "db_data:/var/lib/postgresql/data:rw"
+        #     - "./dump.sql:/dump.sql"
+  
+
+    # ramses-db:
+    #     image: postgres:14.2
+    #     container_name: ramses-db
+    #     restart: always
+    #     env_file:
+    #         - .env
+    #     environment:
+    #         - POSTGRES_PASSWORD=${DB_PASSWORD-test}
+    #         - POSTGRES_USER=${DB_USER-test}
+    #         - POSTGRES_DB=${DB_NAME-ramses}
+    #     ports:
+    #         - "5434:5432"
+    #     volumes:
+    #         - "db_data:/var/lib/postgresql/data:rw"
+    #         - "./dump.sql:/dump.sql"
   
 
     # ramses-api:

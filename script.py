@@ -1,8 +1,9 @@
+from sqlalchemy import delete, select, update
+
 from crud.trading_model_crud import TradingModelCrud
-from models.trading_model import ModelFrequency, ModelClass, TradingModel
-from models import Portfolio, User
 from database import get_db
-from sqlalchemy import select, update, delete
+from models import Portfolio, User
+from models.trading_model import ModelClass, ModelFrequency, TradingModel
 
 session = next(get_db())
 
@@ -30,10 +31,8 @@ session = next(get_db())
 # })
 
 ## READ
-# 1. Preparer la query
-statement = select(TradingModel.id, TradingModel.description).where(
-    TradingModel.is_active.is_(True)
-)
+# 1. Preparer la query
+statement = select(TradingModel.id, TradingModel.description).where(TradingModel.is_active.is_(True))
 
 # 2. Executer la query
 result = session.execute(statement).scalars().all()
@@ -44,17 +43,13 @@ print(f"trading_models {trading_models}")
 
 
 ## UPDATE
-trading_model = TradingModelCrud.get_one(session, (
-    TradingModel.name == "my model"
-))
+trading_model = TradingModelCrud.get_one(session, (TradingModel.name == "my model"))
 trading_model.description = "Bonjour 2"
 session.commit()
 
 
 ## DELETE
-stmt = delete(TradingModel).where(
-    TradingModel.name == "my model"
-)
+stmt = delete(TradingModel).where(TradingModel.name == "my model")
 session.execute(stmt)
 session.commit()
 

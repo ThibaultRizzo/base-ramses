@@ -1,12 +1,48 @@
+#! /bin/bash
 
 ######################
 ###### METHODS #######
 ######################
 
+setup() {
+    _require pyenv
+    log sync "Installing python version..."
+    pyenv install 3.10 -s
+    pyenv shell 3.10
+    poetry env use 3.10
+    poetry install
+}
+
 start() {
     local container_name="ramses-db"
     log sync "Starting docker stack..."
     docker-compose up -d $container_name
+    sleep 2
+    db migrate
+}
+
+stop() {
+    local container_name="ramses-db"
+    log sync "Stopping docker stack..."
+    docker-compose stop $container_name
+}
+
+rm() {
+    local container_name="ramses-db"
+    log sync "Removing docker stack..."
+    docker-compose rm $container_name
+}
+
+# Lint project
+lint() {
+    poetry run black --exclude "(\.venv|\.cache)/" .
+    poetry run isort --profile black .
+    # poetry run pylint --recursive=y .
+#    poetry run find . -iname "*.py" -not -path "./.venv/*" | xargs poetry run pylint -j 0
+}
+
+test() {
+    poetry run pytest $@
 }
 
 start_with_dump() {
@@ -30,6 +66,40 @@ dump() {
 
     docker exec $db_container_id pg_dump -a -f dump.sql -U test -p 5432 $db_name
     docker cp $db_container_id:/dump.sql dump.sql
+}
+
+# Generic database commands
+db() {
+    case $1 in
+        init)
+            compose up -d ramses-db
+            ;;
+        makemigrations)
+            db migrate
+            poetry run alembic revision --autogenerate -m ${2:-"automigrations"}
+            ;;
+        migrate)
+            poetry run alembic upgrade head
+            ;;
+        mergemigrations)
+            poetry run alembic merge heads -m "automerge"
+            ;;
+        downgrade)
+            poetry run alembic downgrade -1
+            ;;
+        shell)
+            local db_container_id=$(docker ps -aqf name="$DB_CONTAINER_NAME")
+            docker exec -it $db_container_id psql -Uroot $PROJECT_NAME "$@"
+            ;;
+        reset)
+            db drop
+            db migrate
+            db seed
+            ;;
+        *)
+            echo "Command '$1' not found for dev.sh#db()"
+            ;;
+    esac
 }
 
 
@@ -76,6 +146,14 @@ _colorized_echo_en(){
     local label="" #"\x1B[1m\x1B[38;5;231m\x1B[48;5;256m[ DO $label ]\x1B[0m "
     local value="\x1B[1m\x1B[48;5;256m\x1B[38;5;$color$@\x1B[0m "
     echo -e "\x1B[0m$label$value\x1B[0m"
+}
+
+_require() {
+  command -v $1 >/dev/null 2>&1 || {
+    echo "Some of the required software is not installed:"
+    echo "    please install $1" >&2
+    exit 1
+  }
 }
 
 $@
